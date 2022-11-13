@@ -13,115 +13,193 @@
       crossorigin="anonymous"
     />
 
-    <title>パスワードジェネレーター</title>
+    <title>マインスイーパー</title>
   </head>
   <body>
     <div class="container">
-      <h1>パスワードジェネレーター</h1>
-      <form>
+      <h1>マインスイーパー</h1>
+      <form id="form-minesweeper" class="mb-5">
+        <h2>入力</h2>
         <div class="row mb-3">
-          <div class="col">
+          <div class="col" style="flex: 0 0 10rem;">
             <label for="input-hight" class="form-label">高さ</label>
-            <input
-              type="number"
-              class="form-control"
-              id="input-width"
-              name="width"
-              value="5"
-            />
-          </div>
-          <div class="col">
-            <label for="input-width" class="form-label">幅</label>
             <input
               type="number"
               class="form-control"
               id="input-height"
               name="height"
+              value="5"
+              required
+              min="1"
+            />
+          </div>
+          <div class="col" style="flex: 0 0 10rem;">
+            <label for="input-width" class="form-label">幅</label>
+            <input
+              type="number"
+              class="form-control"
+              id="input-width"
+              name="width"
               value="8"
+              required
+              min="1"
             />
           </div>
         </div>
-        <table class="table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>0</th>
-              <th>1</th>
-              <th>2</th>
-              <th>3</th>
-              <th>4</th>
-              <th>5</th>
-              <th>6</th>
-              <th>7</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th>0</th>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-            </tr>
-            <tr>
-              <th>1</th>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-            </tr>
-            <tr>
-              <th>2</th>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-            </tr>
-            <tr>
-              <th>3</th>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-            </tr>
-            <tr>
-              <th>4</th>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-              <td><input type="checkbox"></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="mb-3">
+          <label class="form-label">爆弾</label>
+          <table class="table table-minesweeper" id="table-minesweeper"></table>
+        </div>
+        <button type="submit" class="btn btn-primary">生成</button>
       </form>
+      <div>
+        <h2>結果</h2>
+        <table
+          class="table table-minesweeper"
+          id="table-minesweeper-result"
+        ></table>
+      </div>
     </div>
-
-    <!-- Optional JavaScript; choose one of the two! -->
 
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
       crossorigin="anonymous"
     ></script>
+
+    <style>
+      .table-minesweeper {
+        width: auto;
+      }
+      .table-minesweeper th,
+      .table-minesweeper td {
+        width: 2rem;
+        text-align: center;
+      }
+    </style>
+
+    <script>
+      const formMinesweeper = document.querySelector('#form-minesweeper')
+      const inputHeight = document.querySelector('#input-height')
+      const inputWidth = document.querySelector('#input-width')
+      const tableMinesweeper = document.querySelector('#table-minesweeper')
+      const tableMinesweeperResult = document.querySelector('#table-minesweeper-result')
+
+      inputHeight.addEventListener('change', () => {
+        generateTable()
+      })
+      inputWidth.addEventListener('change', () => {
+        generateTable()
+      })
+      formMinesweeper.addEventListener('submit', async (e) => {
+        e.preventDefault()
+
+        const height = Number(inputHeight.value)
+        const width = Number(inputWidth.value)
+        const bombs = Array.from(
+          document.querySelectorAll('[name="bomb"]:checked'),
+        ).map((node) => node.value)
+
+        try {
+          const res = await fetch('/generate', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              height,
+              width,
+              bombs,
+            }),
+          })
+          if (!res.ok) {
+            alert(JSON.stringify(await res.json(), null, 2))
+            return
+          }
+
+          const result = await res.json()
+          renderResult(result)
+        } catch (e) {
+          console.error(e)
+          alert(e.message)
+        }
+      })
+
+      generateTable()
+
+      function generateTable() {
+        const height = Number(inputHeight.value)
+        const width = Number(inputWidth.value)
+
+        const thead = createThead(width)
+        const tbody = document.createElement('tbody')
+        for (let i = 0; i < height; i++) {
+          tbody.appendChild(createTr(i, width))
+        }
+
+        tableMinesweeper.innerHTML = ''
+        tableMinesweeper.appendChild(thead)
+        tableMinesweeper.appendChild(tbody)
+      }
+
+      function createThead(width) {
+        const tr = document.createElement('tr')
+        tr.appendChild(document.createElement('th'))
+
+        for (let i = 0; i < width; i++) {
+          const th = document.createElement('th')
+          th.textContent = String(i)
+          tr.appendChild(th)
+        }
+
+        const thead = document.createElement('thead')
+        thead.appendChild(tr)
+
+        return thead
+      }
+
+      function createTr(row, width) {
+        const tr = document.createElement('tr')
+        const th = document.createElement('th')
+        th.textContent = String(row)
+        tr.appendChild(th)
+
+        for (let i = 0; i < width; i++) {
+          const td = document.createElement('td')
+          td.innerHTML = `
+            <input type="checkbox" class="form-check-input" name="bomb" value="${i},${row}" />
+          `
+          tr.appendChild(td)
+        }
+
+        return tr
+      }
+
+      function renderResult(result) {
+        const tbody = document.createElement('tbody')
+        for (let i = 0; i < result.length; i++) {
+          tbody.appendChild(createTrResult(result[i]))
+        }
+
+        tableMinesweeperResult.innerHTML = ''
+        tableMinesweeperResult.appendChild(tbody)
+      }
+
+      function createTrResult(row) {
+        const tr = document.createElement('tr')
+
+        for (let i = 0; i < row.length; i++) {
+          const td = document.createElement('td')
+          if (row[i] === -1) {
+            td.innerHTML = '<img src="/bomb.png" style="width: 1em">'
+          } else if (row[i] !== 0) {
+            td.textContent = String(row[i])
+          }
+          tr.appendChild(td)
+        }
+
+        return tr
+      }
+    </script>
   </body>
 </html>
